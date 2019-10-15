@@ -7,7 +7,7 @@
         "laravel-toman",
         "payment",
         "zarinpal",
-        "زرین پال",
+        "زرین پال"
     ],
     "authors": [
         {
@@ -67,6 +67,7 @@
         ],
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi"
-        ]
+        ],
+        "test": "vendor/bin/phpunit"
     }
 }
