@@ -14,3 +14,7 @@ js:
     not-name:
       - webpack.mix.js
 css: true
+
+finder:
+  exclude:
+    - "tests"
