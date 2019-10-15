@@ -55,7 +55,7 @@ class PaymentTest extends TestCase
         );
 
         // 'Authority' is one of Zarinpal's callback data
-        $this->get('/payment-callback?Authority=1111')->assertOk();
+        $this->get('/payment-callback?Authority=1111')->assertOk()->assertSee('123456789');
 
         self::assertEquals('123456789', $payment->fresh()->reference_id);
     }
