@@ -17,8 +17,9 @@ class CreatePaymentsTable extends Migration
             $table->bigIncrements('id');
             $table->string('gateway');
             $table->unsignedBigInteger('amount');
+            $table->string('description');
             $table->string('transaction_id');
-            $table->string('reference_id');
+            $table->string('reference_id')->nullable();
             $table->timestamps();
         });
     }

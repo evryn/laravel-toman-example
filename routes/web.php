@@ -14,3 +14,7 @@
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::post('/new-payment', 'PaymentController@create');
+
+Route::get('/payment-callback', 'PaymentController@callback')->name('payment.callback');
