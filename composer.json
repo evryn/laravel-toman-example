@@ -1,10 +1,20 @@
 {
-    "name": "laravel/laravel",
+    "name": "evryn/laravel-toman-example",
     "type": "project",
-    "description": "The Laravel Framework.",
+    "description": "A simple example for evryn/laravel-toman package",
     "keywords": [
-        "framework",
-        "laravel"
+        "evryn",
+        "laravel-toman",
+        "payment",
+        "zarinpal",
+        "زرین پال",
+    ],
+    "authors": [
+        {
+            "name": "Amirreza Nasiri",
+            "email": "nasiri.amirreza.96@gmail.com",
+            "homepage": "https://amirreza.in"
+        }
     ],
     "license": "MIT",
     "require": {
