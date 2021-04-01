@@ -1,10 +1,7 @@
 php:
   preset: laravel
-  enabled:
-    - alpha_ordered_imports
   disabled:
-    - length_ordered_imports
-    - unused_use
+    - no_unused_imports
   finder:
     not-name:
       - index.php
@@ -14,7 +11,3 @@ js:
     not-name:
       - webpack.mix.js
 css: true
-
-finder:
-  exclude:
-    - "tests"

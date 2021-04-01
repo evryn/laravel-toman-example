@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -14,9 +16,3 @@
 Route::get('/', function () {
     return view('welcome');
 });
-
-Route::get('/new-payment', 'PaymentController@new')->name('payment.new');
-
-Route::post('/new-payment', 'PaymentController@create')->name('payment.create');
-
-Route::get('/payment-callback', 'PaymentController@callback')->name('payment.callback');
