@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "21c543b899e32ce0a4afce0c93ef8bc1",
+    "content-hash": "e6966a60ddb9e783f059b321ab1021cc",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -461,25 +461,25 @@
         },
         {
             "name": "evryn/laravel-toman",
-            "version": "2.x-dev",
+            "version": "v2.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/evryn/laravel-toman.git",
-                "reference": "3f429f1a3c2d95de37c343c7d09664355770529e"
+                "reference": "a13bedea9e083335d04dbb5db1350f193108b1fa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/evryn/laravel-toman/zipball/3f429f1a3c2d95de37c343c7d09664355770529e",
-                "reference": "3f429f1a3c2d95de37c343c7d09664355770529e",
+                "url": "https://api.github.com/repos/evryn/laravel-toman/zipball/a13bedea9e083335d04dbb5db1350f193108b1fa",
+                "reference": "a13bedea9e083335d04dbb5db1350f193108b1fa",
                 "shasum": ""
             },
             "require": {
                 "guzzlehttp/guzzle": "^6.3|^7.0",
                 "illuminate/support": "^7.0|^8.0",
-                "php": "^7.3 || ^8.0"
+                "php": "^7.3|^8.0"
             },
             "require-dev": {
-                "mockery/mockery": "^1.1",
+                "mockery/mockery": "^1.3.3",
                 "orchestra/testbench": "~3.8.0|^4.0|^5.0|^6.0",
                 "phpunit/phpunit": "^8.0",
                 "sempro/phpunit-pretty-print": "^1.0"
@@ -511,25 +511,27 @@
                     "homepage": "https://amirreza.in"
                 }
             ],
-            "description": "A simple stable Laravel package to handle popular payment gateways in Iran including Zarinpal.",
+            "description": "A simple stable Laravel package to handle popular payment gateways in Iran including ZarinPal and IDPay.",
             "homepage": "https://github.com/evryn/laravel-toman",
             "keywords": [
                 "gateway",
+                "idpay",
                 "laravel",
                 "laravel-toman",
                 "laraveltoman",
                 "payment",
                 "toman",
                 "zarinpal",
+                "آیدی پی",
                 "درگاه",
                 "زرین پال",
                 "پرداخت"
             ],
             "support": {
                 "issues": "https://github.com/evryn/laravel-toman/issues",
-                "source": "https://github.com/evryn/laravel-toman/tree/2.x"
+                "source": "https://github.com/evryn/laravel-toman/tree/v2.0.0"
             },
-            "time": "2021-04-09T19:02:21+00:00"
+            "time": "2021-04-10T18:32:22+00:00"
         },
         {
             "name": "fideloper/proxy",
