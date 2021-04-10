@@ -2,73 +2,164 @@
 
 namespace Tests\Feature;
 
-use App\Payment;
-use Evryn\LaravelToman\Facades\PaymentRequest;
-use Evryn\LaravelToman\Facades\PaymentVerification;
-use Evryn\LaravelToman\Results\RequestedPayment;
-use Evryn\LaravelToman\Results\VerifiedPayment;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\URL;
+use App\Models\Payment;
+use Evryn\LaravelToman\Facades\Toman;
+use Evryn\LaravelToman\Money;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PaymentTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     /** @test */
-    public function requests_with_correct_details()
+    public function can_request_new_payment()
     {
-        $this->withoutExceptionHandling();
-        static::assertEquals(0, Payment::count());
+        // Arrangement
+        Toman::fakeRequest()->successful()->withTransactionId('A1234');
 
-        PaymentRequest::shouldReceive('callback')->once()->with(URL::route('payment.callback'))->andReturnSelf();
-        PaymentRequest::shouldReceive('description')->once()->with('My donation')->andReturnSelf();
-        PaymentRequest::shouldReceive('amount')->once()->with(1500)->andReturnSelf();
-        PaymentRequest::shouldReceive('request')->once()->withNoArgs()->andReturn(
-            new RequestedPayment('000123', 'https://example.com/000123/pay')
-        );
+        // Acting
+        $this->post('/payment', [
+            'amount' => 5000,
+            'description' => 'My payment description.'
+        ])->assertSessionHasNoErrors()->assertRedirect();
 
-        $this->post('/new-payment', [
-            'amount' => 1500,
-            'description' => 'My donation'
-        ])->assertRedirect('https://example.com/000123/pay');
+        // Assertions
+        Toman::assertRequested(function ($request) {
+            return $request->callback() === route('payment.callback')
+                &&  $request->description() === 'My payment description.'
+                && $request->amount()->is(Money::Toman(5000));
+        });
 
-        $payment = Payment::first();
+        self::assertEquals(1, Payment::count());
 
-        static::assertEquals(1500, $payment->amount);
-        static::assertEquals('My donation', $payment->description);
-        static::assertEquals('000123', $payment->transaction_id);
+        tap(Payment::first(), function (Payment $payment) {
+            self::assertEquals('A1234', $payment->transaction_id);
+        });
     }
 
     /** @test */
-    public function verifies_payment_after_being_redirected_to_callback_page()
+    public function can_fail_with_a_payment_request()
     {
-        $payment = factory(Payment::class)->create([
-            'amount' => 2000,
-            'transaction_id' => '1111',
+        // Arrangement
+        Toman::fakeRequest()->failed();
+
+        // Acting
+        $this->post('/payment', [
+            'amount' => 5000,
+            'description' => 'My payment description.'
+        ])->assertSessionHasErrors();
+
+        // Assertions
+        Toman::assertRequested(function ($request) {
+            return $request->callback() === route('payment.callback')
+                &&  $request->description() === 'My payment description.'
+                && $request->amount()->is(Money::Toman(5000));
+        });
+
+        self::assertEquals(0, Payment::count());
+    }
+
+    /** @test */
+    public function can_verify_successful_incoming_callback()
+    {
+        // Arrangement
+        Toman::fakeVerification()
+            ->successful()
+            ->withTransactionId('A1234')
+            ->withReferenceId('R7000');
+
+        Payment::factory()->create([
+            'amount' => 5000,
+            'transaction_id' => 'A1234'
         ]);
 
-        PaymentVerification::shouldReceive('amount')->once()->with(2000)->andReturnSelf();
-        PaymentVerification::shouldReceive('verify')->once()->with(\Mockery::type(Request::class))->andReturn(
-            new VerifiedPayment('123456789')
-        );
+        $this->withoutExceptionHandling();
+        // Acting
+        $this->get('/payment/callback')->assertOk()
+            ->assertSee('R7000')
+            ->assertSee('موفقیت')
+            ->assertDontSee('شکست')
+            ->assertDontSee('قبلاً');
 
-        // 'Authority' is one of Zarinpal's callback data
-        $this->get('/payment-callback?Authority=1111')->assertOk()->assertSee('123456789');
+        // Assertions
+        Toman::assertCheckedForVerification(function ($request) {
+            return $request->transactionId() === 'A1234'
+                && $request->amount()->is(Money::Toman(5000));
+        });
 
-        self::assertEquals('123456789', $payment->fresh()->reference_id);
+        tap(Payment::first(), function (Payment $payment) {
+            self::assertEquals('R7000', $payment->reference_id);
+            self::assertNotNull($payment->paid_at);
+            self::assertNull($payment->failed_at);
+        });
     }
 
-    /**
-     * There are other valuable tests to write here including:
-     * - verification must happen on correct payment record
-     * - new payment amount is required integer
-     * - new payment amount can't be lower than 100
-     * - new payment description is required string
-     * - correct data are being sent from PaymentController@new form
-     * - correct payment record info is being shown after verification
-     * - etc.
-     */
+    /** @test */
+    public function handles_already_verified_incoming_callback()
+    {
+        // Arrangement
+        Toman::fakeVerification()
+            ->alreadyVerified()
+            ->withTransactionId('A1234')
+            ->withReferenceId('R7000');
 
+        Payment::factory()->create([
+            'amount' => 5000,
+            'transaction_id' => 'A1234',
+            'reference_id' => 'R7000',
+            'paid_at' => '2021-01-01 00:00:00'
+        ]);
+
+        // Acting
+        $this->get('/payment/callback')->assertOk()
+            ->assertSee('R7000')
+            ->assertSee('قبلاً')
+            ->assertDontSee('موفقیت')
+            ->assertDontSee('شکست');
+
+        // Assertions
+        Toman::assertCheckedForVerification(function ($request) {
+            return $request->transactionId() === 'A1234'
+                && $request->amount()->is(Money::Toman(5000));
+        });
+
+        tap(Payment::first(), function (Payment $payment) {
+            self::assertEquals('R7000', $payment->reference_id);
+            self::assertEquals('2021-01-01 00:00:00', $payment->paid_at);
+            self::assertNull($payment->failed_at);
+        });
+    }
+
+    /** @test */
+    public function handles_failed_incoming_callback()
+    {
+        // Arrangement
+        Toman::fakeVerification()
+            ->failed()
+            ->withTransactionId('A1234');
+
+        Payment::factory()->create([
+            'amount' => 5000,
+            'transaction_id' => 'A1234'
+        ]);
+
+        // Acting
+        $this->get('/payment/callback')->assertOk()
+            ->assertSee('شکست')
+            ->assertDontSee('موفقیت')
+            ->assertDontSee('قبلاً');
+
+        // Assertions
+        Toman::assertCheckedForVerification(function ($request) {
+            return $request->transactionId() === 'A1234'
+                && $request->amount()->is(Money::Toman(5000));
+        });
+
+        tap(Payment::first(), function (Payment $payment) {
+            self::assertNotNull($payment->failed_at);
+            self::assertNull($payment->reference_id);
+            self::assertNull($payment->paid_at);
+        });
+    }
 }

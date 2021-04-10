@@ -14,12 +14,13 @@ class CreatePaymentsTable extends Migration
     public function up()
     {
         Schema::create('payments', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->string('gateway');
-            $table->unsignedBigInteger('amount');
-            $table->string('description');
+            $table->id();
+            $table->unsignedInteger('amount');
             $table->string('transaction_id');
             $table->string('reference_id')->nullable();
+            $table->dateTime('verified_at')->nullable();
+            $table->dateTime('failed_at')->nullable();
+            $table->dateTime('paid_at')->nullable();
             $table->timestamps();
         });
     }
@@ -31,6 +32,6 @@ class CreatePaymentsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('transactions');
+        Schema::dropIfExists('payments');
     }
 }

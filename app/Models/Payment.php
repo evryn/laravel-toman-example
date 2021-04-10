@@ -1,11 +1,13 @@
 <?php
 
-namespace App;
+namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
-    /** @var array ⚠ Don't disable guard if you're passing request directly!! */
+    use HasFactory;
+
     protected $guarded = [];
 }

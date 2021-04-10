@@ -1,0 +1,37 @@
+version: "3"
+
+services:
+  php:
+    image: php:8-alpine
+    volumes:
+      - .:/var/www/html
+    command: '-v'
+
+  serve:
+    image: php:8-alpine
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+    ports:
+      - "8000:80"
+    entrypoint: ['php', '/var/www/html/artisan', 'serve', '--host=0.0.0.0', '--port=80']
+
+  artisan:
+    image: php:8-alpine
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: ['php', '/var/www/html/artisan']
+    command: '-V'
+
+  composer:
+    image: composer:2
+    volumes:
+      - .:/app
+      - composer-cache:/tmp/cache
+    working_dir: /app
+    command: '-V'
+
+volumes:
+  composer-cache:
+    name: composer-cache

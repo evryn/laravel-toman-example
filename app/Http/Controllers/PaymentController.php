@@ -4,59 +4,78 @@
 namespace App\Http\Controllers;
 
 
-use App\Payment;
-use Evryn\LaravelToman\Exceptions\GatewayException;
-use Evryn\LaravelToman\Facades\PaymentRequest;
-use Evryn\LaravelToman\Facades\PaymentVerification;
+use App\Models\Payment;
+use Evryn\LaravelToman\CallbackRequest;
+use Evryn\LaravelToman\Facades\Toman;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\URL;
 
 class PaymentController extends Controller
 {
-    public function new()
+    public function create()
     {
-        return view('new');
+        return view('create');
     }
 
-    public function create(Request $request)
+    /**
+     * Request a new payment creation and redirect user to the payment URL
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse|mixed
+     */
+    public function store(Request $request)
     {
-        $this->validate($request, [
-            'amount' => 'bail|required|integer|gt:0',
-            'description' => 'bail|required|string'
+        $request->validate([
+            'amount' => 'required|int',
+            'description' => 'nullable|string'
         ]);
 
-        try {
-            $requestedPayment = PaymentRequest::amount($request->amount)
-                ->callback(URL::route('payment.callback'))
-                ->description($request->description)
-                ->request();
-        } catch (GatewayException $exception) {
-            return back()->withErrors($exception->getMessage());
+        $newPayment = Toman
+            ::amount($request->amount)
+            ->description($request->description)
+            ->request();
+
+        if ($newPayment->failed()) {
+            return back()->withErrors($newPayment->message());
         }
 
+        // We should save amount and retrieved transaction id in order to
+        // make it possible to verify after callback.
         Payment::create([
-            'gateway' => 'zarinpal',
-            'description' => $request->description,
             'amount' => $request->amount,
-            'transaction_id' => $requestedPayment->getTransactionId(),
+            'transaction_id' => $newPayment->transactionId()
         ]);
 
-        return $requestedPayment->pay();
+        return $newPayment->pay();
     }
 
-    public function callback(Request $request)
+    /**
+     * Verify payment callback request to check if the payment was successful or not
+     *
+     * @param CallbackRequest $request
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     */
+    public function callback(CallbackRequest $request)
     {
-        $payment = Payment::whereTransactionId($request->input('Authority'))->firstOrFail();
+        $payment = Payment::whereTransactionId($request->transactionId())->firstOrFail();
 
-        try {
-            $verifiedPayment = PaymentVerification::amount($payment->amount)->verify($request);
-        } catch (GatewayException $exception) {
-            return view('result')->with('payment', $payment)->with('error', $exception->getMessage());
+        $verification = $request->amount($payment->amount)->verify();
+
+        if ($verification->failed()) {
+            $payment->failed_at = now();
         }
 
-        $payment->update([
-            'reference_id' => $verifiedPayment->getReferenceId()
-        ]);
-        return view('result')->with('payment', $payment);
+        if ($verification->alreadyVerified()) {
+            // In case you haven't saved reference_id on the first verification
+            $payment->reference_id = $verification->referenceId();
+        }
+
+        if ($verification->successful()) {
+            $payment->reference_id = $verification->referenceId();
+            $payment->paid_at = now();
+        }
+
+        $payment->save();
+
+        return view('show', compact(['payment', 'verification']));
     }
 }
